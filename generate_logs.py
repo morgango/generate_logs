@@ -365,7 +365,7 @@ class LogGenerator:
             response_time = self._rand_rt()
             upstream = self._pick("checkout", "inventory", "payments", "search", "shipping")
             
-            log_line = f'{ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" rt={response_time} upstream={upstream}'
+            log_line = f'[APACHE] {ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" rt={response_time} upstream={upstream}'
             
             self._write_log(log_line)
             
@@ -388,6 +388,7 @@ class LogGenerator:
             
             log_data = {
                 "fmt": "json",
+                "log_type": "JSON",
                 "ts": timestamp,
                 "level": level,
                 "service": service,
@@ -418,7 +419,7 @@ class LogGenerator:
             status_code = self._pick(200, 201, 202, 204, 400, 401, 403, 404, 429, 500, 502)
             
             message = self._get_realistic_message(service, level)
-            log_line = f"fmt=csv {timestamp},{level},{service},{user},{latency},{status_code},{message}"
+            log_line = f"[CSV] fmt=csv {timestamp},{level},{service},{user},{latency},{status_code},{message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -441,7 +442,7 @@ class LogGenerator:
             country = self._pick("US", "CA", "GB", "DE", "FR", "IN", "BR", "AU", "JP", "SE", "NL")
             session = self._randb64(12)
             
-            log_line = f"fmt=pipe {timestamp}|{level}|{service}|txn={transaction}|amount={amount}|country={country}|session={session}"
+            log_line = f"[PIPE] fmt=pipe {timestamp}|{level}|{service}|txn={transaction}|amount={amount}|country={country}|session={session}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -462,7 +463,7 @@ class LogGenerator:
             duration = self._randint(100, 5000)
             
             message = self._get_realistic_message(service, level)
-            log_line = f'fmt=kv ts="{timestamp}" level={level} service={service} req={request_id} duration_ms={duration} msg="{message}"'
+            log_line = f'[KV] fmt=kv ts="{timestamp}" level={level} service={service} req={request_id} duration_ms={duration} msg="{message}"'
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -487,7 +488,7 @@ class LogGenerator:
             duration = self._randint(1000, 30000)
             
             message = self._get_realistic_message("inventory", level)  # Use inventory service for Hadoop-style logs
-            log_line = f"{timestamp} {level} {component}: {hostname} {job_id} {task_id} memory={memory_mb}MB cpu={cpu_percent}% duration={duration}ms {message}"
+            log_line = f"[HADOOP] {timestamp} {level} {component}: {hostname} {job_id} {task_id} memory={memory_mb}MB cpu={cpu_percent}% duration={duration}ms {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
