@@ -113,6 +113,10 @@ class LogGenerator:
         """Generate random response time as decimal"""
         return f"0.{self._randint(0, 899):03d}"
     
+    def _get_random_lines(self) -> int:
+        """Generate a random number of lines up to the specified maximum"""
+        return self._randint(1, self.lines_per_format)
+    
     def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format"""
         return datetime.now(timezone.utc).isoformat()
@@ -123,9 +127,10 @@ class LogGenerator:
     
     def generate_apache_logs(self) -> None:
         """Generate Apache-style access logs"""
-        self.logger.info(f"[*] Apache: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] Apache: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             ip = f"192.168.{self._randint(0, 1)}.{self._randint(10, 250)}"
             timestamp = self._get_apache_timestamp()
             path = self._pick(
@@ -146,15 +151,16 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] Apache: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] Apache: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] Apache: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] Apache: complete ({lines_to_generate})")
     
     def generate_json_logs(self) -> None:
         """Generate JSON formatted logs"""
-        self.logger.info(f"[*] JSON: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] JSON: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             timestamp = self._get_timestamp()
             level = self._pick("DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "CRITICAL")
             service = self._pick("checkout", "inventory", "payments", "search", "shipping")
@@ -175,15 +181,16 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] JSON: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] JSON: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] JSON: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] JSON: complete ({lines_to_generate})")
     
     def generate_csv_logs(self) -> None:
         """Generate CSV formatted logs"""
-        self.logger.info(f"[*] CSV: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] CSV: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             timestamp = self._get_timestamp()
             level = self._pick("DEBUG", "INFO", "WARN", "ERROR")
             service = self._pick("checkout", "inventory", "payments", "search", "shipping")
@@ -195,15 +202,16 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] CSV: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] CSV: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] CSV: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] CSV: complete ({lines_to_generate})")
     
     def generate_pipe_logs(self) -> None:
         """Generate pipe-delimited logs"""
-        self.logger.info(f"[*] Pipe: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] Pipe: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             timestamp = self._get_timestamp()
             level = self._pick("DEBUG", "INFO", "WARN", "ERROR")
             service = self._pick("checkout", "inventory", "payments", "search", "shipping")
@@ -217,15 +225,16 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] Pipe: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] Pipe: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] Pipe: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] Pipe: complete ({lines_to_generate})")
     
     def generate_kv_logs(self) -> None:
         """Generate key-value formatted logs"""
-        self.logger.info(f"[*] KV: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] KV: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             timestamp = self._get_timestamp()
             level = self._pick("debug", "info", "notice", "warn", "error", "critical")
             service = self._pick("checkout", "inventory", "payments", "search", "shipping")
@@ -236,15 +245,16 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] KV: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] KV: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] KV: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] KV: complete ({lines_to_generate})")
     
     def generate_hadoop_logs(self) -> None:
         """Generate Hadoop-style logs"""
-        self.logger.info(f"[*] Hadoop: starting ({self.lines_per_format} lines)")
+        lines_to_generate = self._get_random_lines()
+        self.logger.info(f"[*] Hadoop: starting ({lines_to_generate} lines)")
         
-        for i in range(1, self.lines_per_format + 1):
+        for i in range(1, lines_to_generate + 1):
             timestamp = self._get_timestamp()
             level = self._pick("INFO", "WARN", "ERROR", "DEBUG")
             component = self._pick("NameNode", "DataNode", "ResourceManager", "NodeManager", "JobTracker", "TaskTracker")
@@ -259,9 +269,9 @@ class LogGenerator:
             self._write_log(log_line)
             
             if i % 1000 == 0:
-                self.logger.info(f"[+] Hadoop: {i}/{self.lines_per_format}")
+                self.logger.info(f"[+] Hadoop: {i}/{lines_to_generate}")
         
-        self.logger.info(f"[OK] Hadoop: complete ({self.lines_per_format})")
+        self.logger.info(f"[OK] Hadoop: complete ({lines_to_generate})")
     
     def run_concurrent(self) -> None:
         """Run all log generators concurrently"""
@@ -275,7 +285,7 @@ class LogGenerator:
         ]
         
         self.logger.info(f"[*] Writing logs to: {self.output_file}")
-        self.logger.info(f"[*] Concurrent generation: {self.lines_per_format * 6} total lines across 6 formats")
+        self.logger.info(f"[*] Concurrent generation: up to {self.lines_per_format} lines per format across 6 formats")
         
         with ThreadPoolExecutor(max_workers=6) as executor:
             futures = {executor.submit(generator): name for name, generator in generators}
@@ -287,7 +297,7 @@ class LogGenerator:
                 except Exception as e:
                     self.logger.error(f"[!] {name} generator failed: {e}")
         
-        self.logger.info(f"[OK] All formats finished. Total lines: {self.lines_per_format * 6}. Output file: {self.output_file}")
+        self.logger.info(f"[OK] All formats finished. Output file: {self.output_file}")
     
     def run_with_duration(self, duration_seconds: int) -> None:
         """Run log generation for a specified duration, restarting if it finishes early"""

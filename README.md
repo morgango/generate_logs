@@ -33,7 +33,7 @@ python3 generate_logs.py --output /path/to/output.log
 
 ### Command Line Options
 
-- `--lines, -l`: Number of lines to generate per format (default: 5000)
+- `--lines, -l`: Maximum number of lines to generate per format (default: 5000, generates 1 to this number randomly)
 - `--output, -o`: Output file path (default: auto-detect)
 - `--format, -f`: Log format to generate (apache, json, csv, pipe, kv, hadoop, all)
 - `--duration, -d`: Run for specified duration in seconds (restarts if finishes early)
@@ -59,7 +59,7 @@ The application will:
 ## Examples
 
 ```bash
-# Generate 1000 lines of each format
+# Generate up to 1000 lines of each format (random amount per format)
 python3 generate_logs.py --lines 1000
 
 # Generate only JSON logs
