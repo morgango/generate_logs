@@ -117,6 +117,225 @@ class LogGenerator:
         """Generate a random number of lines up to the specified maximum"""
         return self._randint(1, self.lines_per_format)
     
+    def _get_realistic_message(self, service: str, level: str) -> str:
+        """Generate realistic log messages based on service and level"""
+        messages = {
+            "checkout": {
+                "DEBUG": [
+                    "Processing payment method validation",
+                    "Validating cart contents before checkout",
+                    "Checking inventory availability for items",
+                    "Verifying user authentication token",
+                    "Calculating shipping costs for order"
+                ],
+                "INFO": [
+                    "User initiated checkout process",
+                    "Payment processed successfully",
+                    "Order confirmed and queued for fulfillment",
+                    "Shipping address validated",
+                    "Order total calculated: ${amount}"
+                ],
+                "WARN": [
+                    "Payment method declined, retrying with backup",
+                    "Inventory low for item {item_id}",
+                    "Shipping address requires verification",
+                    "Tax calculation failed, using default rate",
+                    "User session expired during checkout"
+                ],
+                "ERROR": [
+                    "Payment gateway timeout - retrying",
+                    "Inventory check failed for item {item_id}",
+                    "Address validation service unavailable",
+                    "Credit card processing failed",
+                    "Order creation failed due to system error"
+                ],
+                "CRITICAL": [
+                    "Payment system completely down",
+                    "Database connection lost during checkout",
+                    "Critical security breach detected",
+                    "Order processing system failure",
+                    "Financial transaction system unavailable"
+                ]
+            },
+            "inventory": {
+                "DEBUG": [
+                    "Checking stock levels for product {product_id}",
+                    "Updating inventory counts after sale",
+                    "Validating product availability",
+                    "Processing stock adjustment request",
+                    "Calculating reorder points"
+                ],
+                "INFO": [
+                    "Product {product_id} stock updated",
+                    "Inventory sync completed successfully",
+                    "Stock level alert triggered for {product_id}",
+                    "New product added to inventory",
+                    "Bulk inventory import completed"
+                ],
+                "WARN": [
+                    "Stock level below threshold for {product_id}",
+                    "Inventory sync delayed due to network issues",
+                    "Product {product_id} marked as discontinued",
+                    "Warehouse capacity approaching limit",
+                    "Stock discrepancy detected during audit"
+                ],
+                "ERROR": [
+                    "Failed to update inventory for {product_id}",
+                    "Database connection lost during stock check",
+                    "Inventory sync service unavailable",
+                    "Stock calculation error for product {product_id}",
+                    "Warehouse system integration failed"
+                ],
+                "CRITICAL": [
+                    "Inventory system completely down",
+                    "Critical stock data corruption detected",
+                    "Warehouse management system failure",
+                    "Product database inaccessible",
+                    "Inventory tracking system offline"
+                ]
+            },
+            "payments": {
+                "DEBUG": [
+                    "Validating payment card details",
+                    "Processing refund for transaction {txn_id}",
+                    "Checking payment method eligibility",
+                    "Verifying merchant account status",
+                    "Calculating transaction fees"
+                ],
+                "INFO": [
+                    "Payment of ${amount} processed successfully",
+                    "Refund issued for transaction {txn_id}",
+                    "Payment method updated for user {user_id}",
+                    "Transaction {txn_id} completed",
+                    "Payment gateway response received"
+                ],
+                "WARN": [
+                    "Payment processing delayed due to high volume",
+                    "Fraud detection triggered for transaction {txn_id}",
+                    "Payment method expired for user {user_id}",
+                    "Transaction fee calculation failed",
+                    "Payment gateway rate limit exceeded"
+                ],
+                "ERROR": [
+                    "Payment processing failed for transaction {txn_id}",
+                    "Credit card declined for user {user_id}",
+                    "Payment gateway timeout occurred",
+                    "Transaction {txn_id} failed validation",
+                    "Refund processing error for {txn_id}"
+                ],
+                "CRITICAL": [
+                    "Payment system security breach detected",
+                    "Financial data corruption in transaction {txn_id}",
+                    "Payment gateway completely unavailable",
+                    "Critical payment processing failure",
+                    "Financial system integrity compromised"
+                ]
+            },
+            "search": {
+                "DEBUG": [
+                    "Indexing new product {product_id}",
+                    "Processing search query: {query}",
+                    "Updating search index for category {category}",
+                    "Validating search filters",
+                    "Calculating search relevance scores"
+                ],
+                "INFO": [
+                    "Search index updated successfully",
+                    "User searched for: {query}",
+                    "Search results returned in {time}ms",
+                    "Search cache populated for query: {query}",
+                    "Product {product_id} added to search index"
+                ],
+                "WARN": [
+                    "Search index update delayed",
+                    "Search query timeout for: {query}",
+                    "Search cache miss for popular query",
+                    "Search performance degraded",
+                    "Index optimization required"
+                ],
+                "ERROR": [
+                    "Search index corruption detected",
+                    "Search service unavailable for query: {query}",
+                    "Failed to update search index",
+                    "Search database connection lost",
+                    "Search query processing failed"
+                ],
+                "CRITICAL": [
+                    "Search system completely down",
+                    "Search index data corruption",
+                    "Search database inaccessible",
+                    "Critical search system failure",
+                    "Search infrastructure offline"
+                ]
+            },
+            "shipping": {
+                "DEBUG": [
+                    "Calculating shipping costs for order {order_id}",
+                    "Validating shipping address",
+                    "Processing shipping label request",
+                    "Tracking package {tracking_id}",
+                    "Updating delivery status"
+                ],
+                "INFO": [
+                    "Package {tracking_id} shipped successfully",
+                    "Delivery confirmed for order {order_id}",
+                    "Shipping label generated for {tracking_id}",
+                    "Package {tracking_id} out for delivery",
+                    "Order {order_id} delivered successfully"
+                ],
+                "WARN": [
+                    "Shipping address validation failed",
+                    "Package {tracking_id} delivery delayed",
+                    "Shipping cost calculation error",
+                    "Tracking information unavailable for {tracking_id}",
+                    "Delivery attempt failed for {tracking_id}"
+                ],
+                "ERROR": [
+                    "Failed to generate shipping label",
+                    "Package {tracking_id} lost in transit",
+                    "Shipping service unavailable",
+                    "Delivery confirmation failed",
+                    "Tracking system integration error"
+                ],
+                "CRITICAL": [
+                    "Shipping system completely down",
+                    "Package tracking system offline",
+                    "Critical delivery system failure",
+                    "Shipping database inaccessible",
+                    "Logistics system infrastructure down"
+                ]
+            }
+        }
+        
+        # Get messages for the service, fallback to generic messages
+        service_messages = messages.get(service, {
+            "DEBUG": ["System debug information", "Processing request", "Validating input"],
+            "INFO": ["Operation completed successfully", "User action processed", "System status update"],
+            "WARN": ["Warning condition detected", "Performance degradation", "Resource usage high"],
+            "ERROR": ["Operation failed", "System error occurred", "Request processing failed"],
+            "CRITICAL": ["Critical system failure", "Service unavailable", "Data integrity issue"]
+        })
+        
+        # Get messages for the level, fallback to generic
+        level_messages = service_messages.get(level, ["System message", "Log entry", "Event occurred"])
+        
+        # Pick a random message and replace placeholders
+        message = self._pick(*level_messages)
+        
+        # Replace placeholders with realistic values
+        message = message.replace("{amount}", f"${self._randint(10, 999)}.{self._randint(0, 99):02d}")
+        message = message.replace("{item_id}", f"item_{self._randint(1000, 9999)}")
+        message = message.replace("{product_id}", f"prod_{self._randint(10000, 99999)}")
+        message = message.replace("{user_id}", f"user_{self._randint(1000, 9999)}")
+        message = message.replace("{txn_id}", f"txn_{self._randhex(8)}")
+        message = message.replace("{order_id}", f"order_{self._randint(100000, 999999)}")
+        message = message.replace("{tracking_id}", f"TRK{self._randhex(10).upper()}")
+        message = message.replace("{query}", self._pick("laptop", "phone", "shoes", "book", "headphones", "watch", "camera"))
+        message = message.replace("{category}", self._pick("electronics", "clothing", "books", "home", "sports"))
+        message = message.replace("{time}", str(self._randint(50, 2000)))
+        
+        return message
+    
     def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format"""
         return datetime.now(timezone.utc).isoformat()
@@ -174,7 +393,7 @@ class LogGenerator:
                 "service": service,
                 "user": user,
                 "duration_ms": duration,
-                "msg": "json synthetic event"
+                "msg": self._get_realistic_message(service, level)
             }
             
             log_line = json.dumps(log_data)
@@ -198,7 +417,8 @@ class LogGenerator:
             latency = self._randint(5, 2000)
             status_code = self._pick(200, 201, 202, 204, 400, 401, 403, 404, 429, 500, 502)
             
-            log_line = f"fmt=csv {timestamp},{level},{service},{user},{latency},{status_code}"
+            message = self._get_realistic_message(service, level)
+            log_line = f"fmt=csv {timestamp},{level},{service},{user},{latency},{status_code},{message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -241,7 +461,8 @@ class LogGenerator:
             request_id = f"req-{self._randhex(6)}"
             duration = self._randint(100, 5000)
             
-            log_line = f'fmt=kv ts="{timestamp}" level={level} service={service} req={request_id} duration_ms={duration} msg="keyvalue synthetic event"'
+            message = self._get_realistic_message(service, level)
+            log_line = f'fmt=kv ts="{timestamp}" level={level} service={service} req={request_id} duration_ms={duration} msg="{message}"'
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -265,7 +486,8 @@ class LogGenerator:
             cpu_percent = self._randint(10, 100)
             duration = self._randint(1000, 30000)
             
-            log_line = f"{timestamp} {level} {component}: {hostname} {job_id} {task_id} memory={memory_mb}MB cpu={cpu_percent}% duration={duration}ms hadoop synthetic event"
+            message = self._get_realistic_message("inventory", level)  # Use inventory service for Hadoop-style logs
+            log_line = f"{timestamp} {level} {component}: {hostname} {job_id} {task_id} memory={memory_mb}MB cpu={cpu_percent}% duration={duration}ms {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
