@@ -24,164 +24,156 @@ import logging
 from dotenv import load_dotenv
 from log_generators import LOG_GENERATORS
 
-class LogGenerator:
-    def __init__(self, output_file: str = None, lines_per_format: int = 5000, pause_seconds: float = 0.0):
-        self.lines_per_format = lines_per_format
-        self.output_file = output_file or self._choose_output_file()
-        self.pause_seconds = pause_seconds
-        self.lock = threading.Lock()
-        self._ensure_output_directory()
-        self._setup_logging()
-        
-    def _choose_output_file(self) -> str:
-        """Choose output file location, trying /var/log first, falling back to home directory"""
-        default_path = "/var/log/loadgen/loadgen.log"
-        fallback_path = os.path.expanduser("~/loadgen.log")
-        
+
+def choose_output_file() -> str:
+    """Choose output file location, trying /var/log first, falling back to home directory"""
+    default_path = "/var/log/loadgen/loadgen.log"
+    fallback_path = os.path.expanduser("~/loadgen.log")
+    
+    try:
+        os.makedirs(os.path.dirname(default_path), exist_ok=True)
+        with open(default_path, 'a') as f:
+            f.write("probe\n")
+        return default_path
+    except (PermissionError, OSError):
+        with open(fallback_path, 'a') as f:
+            f.write("probe\n")
+        return fallback_path
+
+
+def ensure_output_directory(output_file: str):
+    """Ensure the output directory exists for the output file and status file"""
+    # Ensure directory for main output file
+    output_dir = os.path.dirname(output_file)
+    if output_dir:  # Only create directory if there's a directory path
         try:
-            os.makedirs(os.path.dirname(default_path), exist_ok=True)
-            with open(default_path, 'a') as f:
-                f.write("probe\n")
-            return default_path
-        except (PermissionError, OSError):
-            with open(fallback_path, 'a') as f:
-                f.write("probe\n")
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"[*] Ensured output directory exists: {output_dir}")
+        except (PermissionError, OSError) as e:
+            print(f"[!] Could not create output directory {output_dir}: {e}")
+            # Try to use a fallback location
+            fallback_path = os.path.expanduser("~/loadgen.log")
+            print(f"[*] Using fallback output file: {fallback_path}")
             return fallback_path
     
-    def _ensure_output_directory(self):
-        """Ensure the output directory exists for the output file and status file"""
-        # Ensure directory for main output file
-        output_dir = os.path.dirname(self.output_file)
-        if output_dir:  # Only create directory if there's a directory path
+    # Ensure directory for status file
+    status_file = f"{output_file}.status"
+    status_dir = os.path.dirname(status_file)
+    if status_dir and status_dir != output_dir:  # Only if different from main output dir
+        try:
+            os.makedirs(status_dir, exist_ok=True)
+            print(f"[*] Ensured status file directory exists: {status_dir}")
+        except (PermissionError, OSError) as e:
+            print(f"[!] Could not create status file directory {status_dir}: {e}")
+    
+    return output_file
+
+
+def setup_logging(output_file: str) -> logging.Logger:
+    """Setup logging configuration"""
+    logger = logging.getLogger('log_generator')
+    logger.setLevel(logging.INFO)
+    
+    # Remove existing handlers to avoid duplicates
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # File handler for status file
+    status_file = f"{output_file}.status"
+    file_handler = logging.FileHandler(status_file)
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    return logger
+
+
+def get_random_lines(lines_per_format: int) -> int:
+    """Generate a random number of lines up to the specified maximum"""
+    return random.randint(1, lines_per_format)
+
+
+def run_concurrent(output_file: str, lines_per_format: int, logger: logging.Logger) -> None:
+    """Run all log generators concurrently"""
+    logger.info(f"[*] Writing logs to: {output_file}")
+    logger.info(f"[*] Concurrent generation: up to {lines_per_format} lines per format across 6 formats")
+    
+    lock = threading.Lock()
+    
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {}
+        
+        for format_name, generator_class in LOG_GENERATORS.items():
+            lines_to_generate = get_random_lines(lines_per_format)
+            generator = generator_class(lines_to_generate, output_file, lock, logger)
+            future = executor.submit(generator.generate)
+            futures[future] = format_name.upper()
+        
+        for future in as_completed(futures):
+            name = futures[future]
             try:
-                os.makedirs(output_dir, exist_ok=True)
-                print(f"[*] Ensured output directory exists: {output_dir}")
-            except (PermissionError, OSError) as e:
-                print(f"[!] Could not create output directory {output_dir}: {e}")
-                # Try to use a fallback location
-                fallback_path = os.path.expanduser("~/loadgen.log")
-                self.output_file = fallback_path
-                print(f"[*] Using fallback output file: {fallback_path}")
+                future.result()
+            except Exception as e:
+                logger.error(f"[!] {name} generator failed: {e}")
+    
+    logger.info(f"[OK] All formats finished. Output file: {output_file}")
+
+
+def run_single_format(format_name: str, output_file: str, lines_per_format: int, logger: logging.Logger) -> None:
+    """Run a single log format generator"""
+    if format_name not in LOG_GENERATORS:
+        logger.error(f"Unknown format: {format_name}")
+        return
+    
+    lines_to_generate = get_random_lines(lines_per_format)
+    logger.info(f"[*] Starting {format_name.upper()} generation of up to {lines_per_format} lines")
+    
+    lock = threading.Lock()
+    generator_class = LOG_GENERATORS[format_name]
+    format_generator = generator_class(lines_to_generate, output_file, lock, logger)
+    format_generator.generate()
+
+
+def run_with_duration(duration_seconds: int, output_file: str, lines_per_format: int, pause_seconds: float, logger: logging.Logger) -> None:
+    """Run log generation for a specified duration, restarting if it finishes early"""
+    start_time = time.time()
+    end_time = start_time + duration_seconds
+    
+    logger.info(f"[*] Starting time-based execution for {duration_seconds} seconds")
+    logger.info(f"[*] Will run until: {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    iteration = 1
+    
+    while time.time() < end_time:
+        remaining_time = end_time - time.time()
+        logger.info(f"[*] Starting iteration {iteration} (remaining: {remaining_time:.1f}s)")
         
-        # Ensure directory for status file
-        status_file = f"{self.output_file}.status"
-        status_dir = os.path.dirname(status_file)
-        if status_dir and status_dir != output_dir:  # Only if different from main output dir
-            try:
-                os.makedirs(status_dir, exist_ok=True)
-                print(f"[*] Ensured status file directory exists: {status_dir}")
-            except (PermissionError, OSError) as e:
-                print(f"[!] Could not create status file directory {status_dir}: {e}")
-    
-    def _setup_logging(self):
-        """Setup logging configuration"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(sys.stdout),
-                logging.FileHandler(f"{self.output_file}.status", mode='a')
-            ]
-        )
-        self.logger = logging.getLogger(__name__)
-    
-    def _write_log(self, line: str):
-        """Thread-safe log writing"""
-        with self.lock:
-            with open(self.output_file, 'a') as f:
-                f.write(line + '\n')
-    
-    def _randint(self, low: int, high: int) -> int:
-        """Generate random integer between low and high (inclusive)"""
-        if low > high:
-            low, high = high, low
-        return random.randint(low, high)
-    
-    def _pick(self, *choices) -> str:
-        """Pick a random choice from the provided options"""
-        return random.choice(choices)
-    
-    def _randhex(self, length: int = 8) -> str:
-        """Generate random hexadecimal string"""
-        return ''.join(random.choices('0123456789abcdef', k=length))
-    
-    def _randb64(self, length: int = 12) -> str:
-        """Generate random base64-like string"""
-        chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        return ''.join(random.choices(chars, k=length))
-    
-    def _rand_rt(self) -> str:
-        """Generate random response time as decimal"""
-        return f"0.{self._randint(0, 899):03d}"
-    
-    def _get_random_lines(self) -> int:
-        """Generate a random number of lines up to the specified maximum"""
-        return self._randint(1, self.lines_per_format)
-    
-    def _get_timestamp(self) -> str:
-        """Get current timestamp in ISO format"""
-        return datetime.now(timezone.utc).isoformat()
-    
-    def _get_apache_timestamp(self) -> str:
-        """Get timestamp in Apache log format"""
-        return datetime.now().strftime('%d/%b/%Y:%H:%M:%S %z')
-    
-    
-    def run_concurrent(self) -> None:
-        """Run all log generators concurrently"""
-        self.logger.info(f"[*] Writing logs to: {self.output_file}")
-        self.logger.info(f"[*] Concurrent generation: up to {self.lines_per_format} lines per format across 6 formats")
+        # Run the concurrent generation
+        run_concurrent(output_file, lines_per_format, logger)
         
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {}
+        # Check if we still have time left
+        if time.time() < end_time:
+            logger.info(f"[*] Iteration {iteration} completed, restarting for remaining time...")
+            iteration += 1
             
-            for format_name, generator_class in LOG_GENERATORS.items():
-                lines_to_generate = self._get_random_lines()
-                generator = generator_class(lines_to_generate, self.output_file, self.lock, self.logger)
-                future = executor.submit(generator.generate)
-                futures[future] = format_name.upper()
-            
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    future.result()
-                except Exception as e:
-                    self.logger.error(f"[!] {name} generator failed: {e}")
-        
-        self.logger.info(f"[OK] All formats finished. Output file: {self.output_file}")
+            # Add pause between iterations if specified
+            if pause_seconds > 0:
+                logger.info(f"[*] Pausing for {pause_seconds} seconds...")
+                time.sleep(pause_seconds)
+        else:
+            logger.info(f"[*] Time limit reached after {iteration} iteration(s)")
+            break
     
-    def run_with_duration(self, duration_seconds: int) -> None:
-        """Run log generation for a specified duration, restarting if it finishes early"""
-        start_time = time.time()
-        end_time = start_time + duration_seconds
-        
-        self.logger.info(f"[*] Starting time-based execution for {duration_seconds} seconds")
-        self.logger.info(f"[*] Will run until: {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        iteration = 1
-        
-        while time.time() < end_time:
-            remaining_time = end_time - time.time()
-            self.logger.info(f"[*] Starting iteration {iteration} (remaining: {remaining_time:.1f}s)")
-            
-            # Run the concurrent generation
-            self.run_concurrent()
-            
-            # Check if we still have time left
-            if time.time() < end_time:
-                self.logger.info(f"[*] Iteration {iteration} completed, restarting for remaining time...")
-                iteration += 1
-                
-                # Add pause between iterations if specified
-                if self.pause_seconds > 0:
-                    self.logger.info(f"[*] Pausing for {self.pause_seconds:.1f} seconds...")
-                    time.sleep(self.pause_seconds)
-            else:
-                self.logger.info(f"[*] Time limit reached after {iteration} iteration(s)")
-                break
-        
-        total_runtime = time.time() - start_time
-        self.logger.info(f"[OK] Time-based execution completed. Total runtime: {total_runtime:.1f}s, Iterations: {iteration}")
+    total_runtime = time.time() - start_time
+    logger.info(f"[OK] Time-based execution completed. Total runtime: {total_runtime:.1f}s, Iterations: {iteration}")
+
 
 def load_env_config():
     """Load configuration from .env file if it exists"""
@@ -196,6 +188,7 @@ def load_env_config():
             'pause': os.getenv('LOG_PAUSE')
         }
     return {}
+
 
 def main():
     # Load environment configuration first
@@ -221,33 +214,23 @@ def main():
     
     args = parser.parse_args()
     
-    generator = LogGenerator(
-        output_file=args.output,
-        lines_per_format=args.lines,
-        pause_seconds=args.pause
-    )
+    # Setup output file and logging
+    output_file = args.output or choose_output_file()
+    output_file = ensure_output_directory(output_file)
+    logger = setup_logging(output_file)
     
     # If duration is specified, use time-based execution
     if args.duration:
         if args.format != "all":
-            generator.logger.warning("[!] Duration mode only supports 'all' format. Using all formats.")
-        generator.run_with_duration(args.duration)
+            logger.warning("[!] Duration mode only supports 'all' format. Using all formats.")
+        run_with_duration(args.duration, output_file, args.lines, args.pause, logger)
     else:
         # Original execution logic
         if args.format == "all":
-            generator.run_concurrent()
+            run_concurrent(output_file, args.lines, logger)
         else:
-            if args.format not in LOG_GENERATORS:
-                generator.logger.error(f"Unknown format: {args.format}")
-                return
-            
-            lines_to_generate = generator._get_random_lines()
-            generator.logger.info(f"[*] Starting {args.format.upper()} generation of up to {args.lines} lines")
-            
-            generator_class = LOG_GENERATORS[args.format]
-            format_generator = generator_class(lines_to_generate, generator.output_file, generator.lock, generator.logger)
-            format_generator.generate()
+            run_single_format(args.format, output_file, args.lines, logger)
+
 
 if __name__ == "__main__":
     main()
-
