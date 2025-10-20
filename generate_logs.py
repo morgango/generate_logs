@@ -126,14 +126,27 @@ class LogGenerator:
                     "Validating cart contents before checkout",
                     "Checking inventory availability for items",
                     "Verifying user authentication token",
-                    "Calculating shipping costs for order"
+                    "Calculating shipping costs for order",
+                    "Applying promotional discounts",
+                    "Validating coupon code",
+                    "Checking user loyalty points"
                 ],
                 "INFO": [
                     "User initiated checkout process",
                     "Payment processed successfully",
                     "Order confirmed and queued for fulfillment",
                     "Shipping address validated",
-                    "Order total calculated: ${amount}"
+                    "Order total calculated: ${amount}",
+                    "User completed checkout in {time} seconds",
+                    "Order {order_id} created successfully",
+                    "Payment method updated successfully",
+                    "Checkout process completed without issues",
+                    "User added items to cart",
+                    "Shipping method selected",
+                    "Tax calculation completed",
+                    "User profile updated",
+                    "Cart contents validated",
+                    "Discount applied successfully"
                 ],
                 "WARN": [
                     "Payment method declined, retrying with backup",
@@ -163,14 +176,24 @@ class LogGenerator:
                     "Updating inventory counts after sale",
                     "Validating product availability",
                     "Processing stock adjustment request",
-                    "Calculating reorder points"
+                    "Calculating reorder points",
+                    "Syncing inventory with warehouse",
+                    "Validating product data",
+                    "Processing inventory updates"
                 ],
                 "INFO": [
                     "Product {product_id} stock updated",
                     "Inventory sync completed successfully",
                     "Stock level alert triggered for {product_id}",
                     "New product added to inventory",
-                    "Bulk inventory import completed"
+                    "Bulk inventory import completed",
+                    "Product {product_id} restocked",
+                    "Inventory audit completed successfully",
+                    "Stock levels synchronized across warehouses",
+                    "Product {product_id} availability confirmed",
+                    "Inventory report generated",
+                    "Stock adjustment processed",
+                    "Product catalog updated"
                 ],
                 "WARN": [
                     "Stock level below threshold for {product_id}",
@@ -200,14 +223,23 @@ class LogGenerator:
                     "Processing refund for transaction {txn_id}",
                     "Checking payment method eligibility",
                     "Verifying merchant account status",
-                    "Calculating transaction fees"
+                    "Calculating transaction fees",
+                    "Validating payment security",
+                    "Processing payment authorization"
                 ],
                 "INFO": [
                     "Payment of ${amount} processed successfully",
                     "Refund issued for transaction {txn_id}",
                     "Payment method updated for user {user_id}",
                     "Transaction {txn_id} completed",
-                    "Payment gateway response received"
+                    "Payment gateway response received",
+                    "Payment authorization successful",
+                    "Transaction {txn_id} settled",
+                    "Payment method verified for user {user_id}",
+                    "Refund processed for order {order_id}",
+                    "Payment confirmation sent",
+                    "Transaction fees calculated",
+                    "Payment security check passed"
                 ],
                 "WARN": [
                     "Payment processing delayed due to high volume",
@@ -237,14 +269,23 @@ class LogGenerator:
                     "Processing search query: {query}",
                     "Updating search index for category {category}",
                     "Validating search filters",
-                    "Calculating search relevance scores"
+                    "Calculating search relevance scores",
+                    "Building search suggestions",
+                    "Optimizing search results"
                 ],
                 "INFO": [
                     "Search index updated successfully",
                     "User searched for: {query}",
                     "Search results returned in {time}ms",
                     "Search cache populated for query: {query}",
-                    "Product {product_id} added to search index"
+                    "Product {product_id} added to search index",
+                    "Search analytics updated",
+                    "Search performance optimized",
+                    "Search suggestions generated",
+                    "Search index rebuilt successfully",
+                    "Search filters applied",
+                    "Search ranking updated",
+                    "Search cache hit for popular query"
                 ],
                 "WARN": [
                     "Search index update delayed",
@@ -274,14 +315,23 @@ class LogGenerator:
                     "Validating shipping address",
                     "Processing shipping label request",
                     "Tracking package {tracking_id}",
-                    "Updating delivery status"
+                    "Updating delivery status",
+                    "Validating shipping options",
+                    "Processing delivery confirmation"
                 ],
                 "INFO": [
                     "Package {tracking_id} shipped successfully",
                     "Delivery confirmed for order {order_id}",
                     "Shipping label generated for {tracking_id}",
                     "Package {tracking_id} out for delivery",
-                    "Order {order_id} delivered successfully"
+                    "Order {order_id} delivered successfully",
+                    "Shipping address validated",
+                    "Package {tracking_id} in transit",
+                    "Delivery scheduled for order {order_id}",
+                    "Shipping confirmation sent",
+                    "Package {tracking_id} arrived at destination",
+                    "Delivery route optimized",
+                    "Shipping costs calculated"
                 ],
                 "WARN": [
                     "Shipping address validation failed",
