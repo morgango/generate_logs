@@ -522,7 +522,7 @@ class LogstashLogGenerator(BaseLogGenerator):
             message = self._get_realistic_message(service, level)
             
             # Logstash format: structured with clear field separators
-            log_line = f"@timestamp={timestamp}; level={level}; service={service}; request_id={request_id}; session_id={session_id}; user_id={user_id}; duration_ms={duration}; status_code={status_code}; ip={ip_address}; user_agent={user_agent}; message={message}"
+            log_line = f"fmt=logstash @timestamp={timestamp}; level={level}; service={service}; request_id={request_id}; session_id={session_id}; user_id={user_id}; duration_ms={duration}; status_code={status_code}; ip={ip_address}; user_agent={user_agent}; message={message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
