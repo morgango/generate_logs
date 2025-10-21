@@ -463,7 +463,7 @@ class KvLogGenerator(BaseLogGenerator):
             duration = self._randint(100, 5000)
             
             message = self._get_realistic_message(service, level)
-            log_line = f'fmt=kv ts="{timestamp}" level={level} service={service} req={request_id} duration_ms={duration} msg="{message}"'
+            log_line = f'fmt=kv ts={timestamp} level={level} service={service} req={request_id} duration_ms={duration} msg={message}'
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -491,7 +491,7 @@ class HadoopLogGenerator(BaseLogGenerator):
             duration = self._randint(1000, 30000)
             
             message = self._get_realistic_message("inventory", level)  # Use inventory service for Hadoop-style logs
-            log_line = f"fmt=hadoop {timestamp} {level} {component}: {hostname} {job_id} {task_id} memory={memory_mb}MB cpu={cpu_percent}% duration={duration}ms {message}"
+            log_line = f"fmt=hadoop {timestamp} {level} {component} {hostname} {job_id} {task_id} memory={memory_mb} cpu={cpu_percent} duration={duration} {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
