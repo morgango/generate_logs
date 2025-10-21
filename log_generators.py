@@ -531,6 +531,133 @@ class LogstashLogGenerator(BaseLogGenerator):
         self.logger.info(f"[OK] Logstash: complete ({self.lines})")
 
 
+class NginxLogGenerator(BaseLogGenerator):
+    """Generates NGINX access logs"""
+    
+    def _get_nginx_timestamp(self) -> str:
+        """Get timestamp in NGINX log format"""
+        return datetime.now().strftime('%d/%b/%Y:%H:%M:%S %z')
+    
+    def generate(self) -> None:
+        """Generate NGINX access logs"""
+        self.logger.info(f"[*] NGINX: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            ip = f"{self._randint(1, 255)}.{self._randint(1, 255)}.{self._randint(1, 255)}.{self._randint(1, 255)}"
+            timestamp = self._get_nginx_timestamp()
+            method = self._pick("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS")
+            path = self._pick(
+                "/", "/api/v1/users", "/api/v1/orders", "/api/v1/products", 
+                "/static/css/style.css", "/static/js/app.js", "/health", "/metrics",
+                f"/api/v1/orders/{self._randint(1000, 9999)}", f"/api/v1/users/{self._randint(100, 999)}"
+            )
+            protocol = "HTTP/1.1"
+            status_code = self._pick(200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 429, 500, 502, 503, 504)
+            bytes_sent = self._randint(100, 50000)
+            referer = self._pick("-", "https://example.com", "https://google.com", "https://github.com")
+            user_agent = self._pick(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                "curl/8.0.1", "Go-http-client/1.1", "Python-urllib/3.10"
+            )
+            response_time = self._rand_rt()
+            upstream = self._pick("checkout", "inventory", "payments", "search", "shipping")
+            
+            log_line = f'fmt=nginx {ip} - - [{timestamp}] "{method} {path} {protocol}" {status_code} {bytes_sent} "{referer}" "{user_agent}" rt={response_time} upstream={upstream}'
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] NGINX: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] NGINX: complete ({self.lines})")
+
+
+class TomcatLogGenerator(BaseLogGenerator):
+    """Generates Apache Tomcat logs"""
+    
+    def generate(self) -> None:
+        """Generate Apache Tomcat logs"""
+        self.logger.info(f"[*] Tomcat: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            timestamp = self._get_timestamp()
+            level = self._pick("INFO", "WARN", "ERROR", "DEBUG", "FATAL")
+            component = self._pick("org.apache.catalina.core.ContainerBase", "org.apache.catalina.startup.Catalina", 
+                                 "org.apache.catalina.session.StandardSession", "org.apache.catalina.connector.CoyoteAdapter")
+            thread = f"http-nio-8080-exec-{self._randint(1, 20)}"
+            message = self._get_realistic_message("checkout", level)
+            
+            # Tomcat format: timestamp level component thread message
+            log_line = f"fmt=tomcat {timestamp} {level} {component} {thread} {message}"
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] Tomcat: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] Tomcat: complete ({self.lines})")
+
+
+class MysqlLogGenerator(BaseLogGenerator):
+    """Generates MySQL slow query logs"""
+    
+    def generate(self) -> None:
+        """Generate MySQL slow query logs"""
+        self.logger.info(f"[*] MySQL: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            timestamp = self._get_timestamp()
+            user = f"user_{self._randint(100, 999)}"
+            host = f"10.{self._randint(0, 255)}.{self._randint(0, 255)}.{self._randint(1, 254)}"
+            query_time = f"{self._randint(1, 10)}.{self._randint(0, 999):03d}"
+            lock_time = f"0.{self._randint(0, 99):03d}"
+            rows_sent = self._randint(0, 1000)
+            rows_examined = self._randint(100, 10000)
+            database = self._pick("ecommerce", "inventory", "payments", "users", "analytics")
+            
+            # Common SQL queries
+            queries = [
+                f"SELECT * FROM {database}.orders WHERE user_id = {self._randint(1000, 9999)}",
+                f"SELECT COUNT(*) FROM {database}.products WHERE category = '{self._pick('electronics', 'clothing', 'books')}'",
+                f"UPDATE {database}.inventory SET stock = stock - {self._randint(1, 10)} WHERE product_id = {self._randint(1000, 9999)}",
+                f"INSERT INTO {database}.logs (message, timestamp) VALUES ('{self._get_realistic_message('inventory', 'INFO')}', NOW())",
+                f"DELETE FROM {database}.sessions WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)"
+            ]
+            
+            query = self._pick(*queries)
+            
+            log_line = f"fmt=mysql {timestamp} {user}[{user}] @ {host} [{timestamp}] {query_time} {lock_time} {rows_sent} {rows_examined} {database} {query}"
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] MySQL: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] MySQL: complete ({self.lines})")
+
+
+class RedisLogGenerator(BaseLogGenerator):
+    """Generates Redis logs"""
+    
+    def generate(self) -> None:
+        """Generate Redis logs"""
+        self.logger.info(f"[*] Redis: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            timestamp = self._get_timestamp()
+            level = self._pick("INFO", "WARN", "ERROR", "DEBUG")
+            pid = self._randint(1000, 9999)
+            role = self._pick("master", "slave", "sentinel")
+            message = self._get_realistic_message("inventory", level)
+            
+            # Redis format: timestamp level pid role message
+            log_line = f"fmt=redis {timestamp} {level} {pid}:C {role} {message}"
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] Redis: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] Redis: complete ({self.lines})")
+
+
 # Registry of all available log generators
 LOG_GENERATORS = {
     "apache": ApacheLogGenerator,
@@ -539,4 +666,8 @@ LOG_GENERATORS = {
     "kv": KvLogGenerator,
     "hadoop": HadoopLogGenerator,
     "logstash": LogstashLogGenerator,
+    "nginx": NginxLogGenerator,
+    "tomcat": TomcatLogGenerator,
+    "mysql": MysqlLogGenerator,
+    "redis": RedisLogGenerator,
 }
