@@ -500,12 +500,43 @@ class HadoopLogGenerator(BaseLogGenerator):
         self.logger.info(f"[OK] Hadoop: complete ({self.lines})")
 
 
+class LogstashLogGenerator(BaseLogGenerator):
+    """Generates Logstash-style structured logs"""
+    
+    def generate(self) -> None:
+        """Generate Logstash-style structured logs"""
+        self.logger.info(f"[*] Logstash: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            timestamp = self._get_timestamp()
+            level = self._pick("DEBUG", "INFO", "WARN", "ERROR", "FATAL")
+            service = self._pick("checkout", "inventory", "payments", "search", "shipping")
+            request_id = f"req-{self._randhex(8)}"
+            session_id = f"sess-{self._randhex(12)}"
+            user_id = f"user-{self._randint(1000, 9999)}"
+            duration = self._randint(50, 5000)
+            status_code = self._pick(200, 201, 202, 204, 400, 401, 403, 404, 429, 500, 502, 503)
+            ip_address = f"10.{self._randint(0, 255)}.{self._randint(0, 255)}.{self._randint(1, 254)}"
+            user_agent = self._pick("Mozilla/5.0", "curl/8.0", "Go-http-client/1.1", "Python-urllib/3.10")
+            
+            message = self._get_realistic_message(service, level)
+            
+            # Logstash format: structured with clear field separators
+            log_line = f"@timestamp={timestamp}; level={level}; service={service}; request_id={request_id}; session_id={session_id}; user_id={user_id}; duration_ms={duration}; status_code={status_code}; ip={ip_address}; user_agent={user_agent}; message={message}"
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] Logstash: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] Logstash: complete ({self.lines})")
+
+
 # Registry of all available log generators
 LOG_GENERATORS = {
     "apache": ApacheLogGenerator,
-    "json": JsonLogGenerator,
     "csv": CsvLogGenerator,
     "pipe": PipeLogGenerator,
     "kv": KvLogGenerator,
     "hadoop": HadoopLogGenerator,
+    "logstash": LogstashLogGenerator,
 }
