@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
 Synthetic Log Generator
-Generates distinct types of synthetic log data in 6 different formats:
-1. Apache Log data
+Generates distinct types of synthetic log data in 10 different formats:
+1. Apache HTTP access logs
 2. JSON formatted log data  
 3. CSV formatted log data
 4. Pipe delimited log data
 5. KV delimited log data
-6. Hadoop log data
+6. Hadoop system logs
+7. Logstash structured logs
+8. NGINX access logs
+9. Apache Tomcat logs
+10. MySQL slow query logs
+11. Redis logs
 """
 
 import json
@@ -103,11 +108,11 @@ def get_random_lines(lines_per_format: int) -> int:
 def run_concurrent(output_file: str, lines_per_format: int, logger: logging.Logger) -> None:
     """Run all log generators concurrently"""
     logger.info(f"[*] Writing logs to: {output_file}")
-    logger.info(f"[*] Concurrent generation: up to {lines_per_format} lines per format across 6 formats")
+    logger.info(f"[*] Concurrent generation: up to {lines_per_format} lines per format across {len(LOG_GENERATORS)} formats")
     
     lock = threading.Lock()
     
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=len(LOG_GENERATORS)) as executor:
         futures = {}
         
         for format_name, generator_class in LOG_GENERATORS.items():
@@ -202,7 +207,7 @@ def main():
                        default=env_config.get('output'),
                        help="Output file path (default: auto-detect)")
     parser.add_argument("--format", "-f", choices=[
-        "apache", "json", "csv", "pipe", "kv", "hadoop", "all"
+        "apache", "json", "csv", "pipe", "kv", "hadoop", "logstash", "nginx", "tomcat", "mysql", "redis", "all"
     ], default=env_config.get('format', 'all'), 
                        help="Log format to generate (default: all)")
     parser.add_argument("--duration", "-d", type=int, 

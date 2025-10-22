@@ -339,7 +339,7 @@ class ApacheLogGenerator(BaseLogGenerator):
         self.logger.info(f"[*] Apache: starting ({self.lines} lines)")
         
         for i in range(1, self.lines + 1):
-            ip = f"192.168.{self._randint(0, 1)}.{self._randint(10, 250)}"
+            ip = f"{self._randint(1, 255)}.{self._randint(1, 255)}.{self._randint(1, 255)}.{self._randint(1, 255)}"
             timestamp = self._get_apache_timestamp()
             path = self._pick(
                 "/", "/index.html", "/health", "/login", 
@@ -348,13 +348,12 @@ class ApacheLogGenerator(BaseLogGenerator):
             method = self._pick("GET", "POST", "PUT", "DELETE")
             status_code = self._pick(200, 201, 204, 301, 302, 400, 401, 403, 404, 429, 500, 502, 503)
             bytes_sent = self._randint(100, 90000)
-            user_agent = self._pick(
-                "curl/8.0", "Mozilla/5.0", "Go-http-client/1.1", "Python-urllib/3.10"
-            )
-            response_time = self._rand_rt()
+            user_agent = f"{self._pick('Mozilla', 'Chrome', 'Safari', 'Firefox')}/{self._randint(1, 9)}.{self._randint(0, 9)}"
+            response_time = f"{self._randint(0, 9)}.{self._randint(0, 999)}"
             upstream = self._pick("checkout", "inventory", "payments", "search", "shipping")
             
-            log_line = f'fmt=apache {ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" rt={response_time} upstream={upstream}'
+            # Updated to match the working pattern from ELASTICSEARCH_GROK_PATTERNS.md
+            log_line = f'fmt=apache {ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" {response_time} {upstream}'
             
             self._write_log(log_line)
             
