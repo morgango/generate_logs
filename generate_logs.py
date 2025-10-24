@@ -48,12 +48,13 @@ def choose_output_file() -> str:
 
 def ensure_output_directory(output_file: str):
     """Ensure the output directory exists for the output file and status file"""
-    # Ensure directory for main output file
+    # Ensure directory for main output file (and all individual format files)
     output_dir = os.path.dirname(output_file)
     if output_dir:  # Only create directory if there's a directory path
         try:
             os.makedirs(output_dir, exist_ok=True)
             print(f"[*] Ensured output directory exists: {output_dir}")
+            print(f"[*] Individual format files will be created in this directory")
         except (PermissionError, OSError) as e:
             print(f"[!] Could not create output directory {output_dir}: {e}")
             # Try to use a fallback location
@@ -107,17 +108,25 @@ def get_random_lines(lines_per_format: int) -> int:
 
 def run_concurrent(output_file: str, lines_per_format: int, logger: logging.Logger) -> None:
     """Run all log generators concurrently"""
-    logger.info(f"[*] Writing logs to: {output_file}")
+    # Generate individual file paths for each format
+    base_dir = os.path.dirname(output_file)
+    base_name = os.path.basename(output_file).replace('.log', '')
+    
+    logger.info(f"[*] Writing logs to individual files in: {base_dir}")
     logger.info(f"[*] Concurrent generation: up to {lines_per_format} lines per format across {len(LOG_GENERATORS)} formats")
     
     lock = threading.Lock()
+    output_files = []
     
     with ThreadPoolExecutor(max_workers=len(LOG_GENERATORS)) as executor:
         futures = {}
         
         for format_name, generator_class in LOG_GENERATORS.items():
             lines_to_generate = get_random_lines(lines_per_format)
-            generator = generator_class(lines_to_generate, output_file, lock, logger)
+            format_file = os.path.join(base_dir, f"{base_name}_{format_name}.log")
+            output_files.append(format_file)
+            
+            generator = generator_class(lines_to_generate, format_file, lock, logger)
             future = executor.submit(generator.generate)
             futures[future] = format_name.upper()
         
@@ -128,7 +137,9 @@ def run_concurrent(output_file: str, lines_per_format: int, logger: logging.Logg
             except Exception as e:
                 logger.error(f"[!] {name} generator failed: {e}")
     
-    logger.info(f"[OK] All formats finished. Output file: {output_file}")
+    logger.info(f"[OK] All formats finished. Output files:")
+    for output_file in output_files:
+        logger.info(f"    - {output_file}")
 
 
 def run_single_format(format_name: str, output_file: str, lines_per_format: int, logger: logging.Logger) -> None:
@@ -138,11 +149,18 @@ def run_single_format(format_name: str, output_file: str, lines_per_format: int,
         return
     
     lines_to_generate = get_random_lines(lines_per_format)
+    
+    # Generate format-specific file path
+    base_dir = os.path.dirname(output_file)
+    base_name = os.path.basename(output_file).replace('.log', '')
+    format_file = os.path.join(base_dir, f"{base_name}_{format_name}.log")
+    
     logger.info(f"[*] Starting {format_name.upper()} generation of up to {lines_per_format} lines")
+    logger.info(f"[*] Writing to: {format_file}")
     
     lock = threading.Lock()
     generator_class = LOG_GENERATORS[format_name]
-    format_generator = generator_class(lines_to_generate, output_file, lock, logger)
+    format_generator = generator_class(lines_to_generate, format_file, lock, logger)
     format_generator.generate()
 
 
@@ -153,6 +171,7 @@ def run_with_duration(duration_seconds: int, output_file: str, lines_per_format:
     
     logger.info(f"[*] Starting time-based execution for {duration_seconds} seconds")
     logger.info(f"[*] Will run until: {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"[*] Each iteration will create individual files per format")
     
     iteration = 1
     
@@ -160,7 +179,7 @@ def run_with_duration(duration_seconds: int, output_file: str, lines_per_format:
         remaining_time = end_time - time.time()
         logger.info(f"[*] Starting iteration {iteration} (remaining: {remaining_time:.1f}s)")
         
-        # Run the concurrent generation
+        # Run the concurrent generation (now creates individual files)
         run_concurrent(output_file, lines_per_format, logger)
         
         # Check if we still have time left
