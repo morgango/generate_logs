@@ -657,6 +657,86 @@ class RedisLogGenerator(BaseLogGenerator):
         self.logger.info(f"[OK] Redis: complete ({self.lines})")
 
 
+class SyslogLogGenerator(BaseLogGenerator):
+    """Generates custom syslog-formatted logs with structured data"""
+    
+    def _get_syslog_priority(self, level: str) -> str:
+        """Map log levels to syslog priority codes"""
+        priority_map = {
+            "DEBUG": "7",    # LOG_DEBUG
+            "INFO": "6",     # LOG_INFO  
+            "NOTICE": "5",   # LOG_NOTICE
+            "WARN": "4",     # LOG_WARNING
+            "ERROR": "3",    # LOG_ERR
+            "CRITICAL": "2", # LOG_CRIT
+            "ALERT": "1",    # LOG_ALERT
+            "EMERG": "0"     # LOG_EMERG
+        }
+        return priority_map.get(level, "6")
+    
+    def _get_syslog_facility(self, service: str) -> str:
+        """Map services to syslog facility codes"""
+        facility_map = {
+            "checkout": "16",    # LOG_LOCAL0
+            "inventory": "17",   # LOG_LOCAL1
+            "payments": "18",    # LOG_LOCAL2
+            "search": "19",      # LOG_LOCAL3
+            "shipping": "20",    # LOG_LOCAL4
+            "auth": "4",         # LOG_AUTH
+            "mail": "2",         # LOG_MAIL
+            "daemon": "3",       # LOG_DAEMON
+            "kern": "0"          # LOG_KERN
+        }
+        return facility_map.get(service, "16")
+    
+    def _generate_structured_data(self, service: str, level: str) -> str:
+        """Generate RFC 5424 structured data"""
+        request_id = f"req-{self._randhex(8)}"
+        session_id = f"sess-{self._randhex(12)}"
+        user_id = f"user-{self._randint(1000, 9999)}"
+        duration = self._randint(10, 5000)
+        status_code = self._pick(200, 201, 204, 400, 401, 403, 404, 429, 500, 502, 503)
+        ip_address = f"10.{self._randint(0, 255)}.{self._randint(0, 255)}.{self._randint(1, 254)}"
+        
+        # RFC 5424 structured data format
+        structured_data = f'[app@12345 service="{service}" request_id="{request_id}" session_id="{session_id}" user_id="{user_id}" duration_ms="{duration}" status_code="{status_code}" client_ip="{ip_address}"]'
+        
+        return structured_data
+    
+    def generate(self) -> None:
+        """Generate custom syslog-formatted logs"""
+        self.logger.info(f"[*] Syslog: starting ({self.lines} lines)")
+        
+        for i in range(1, self.lines + 1):
+            timestamp = self._get_timestamp()
+            level = self._pick("DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "CRITICAL", "ALERT", "EMERG")
+            service = self._pick("checkout", "inventory", "payments", "search", "shipping", "auth", "mail", "daemon")
+            hostname = f"app-{self._randint(1, 10)}.cluster.local"
+            app_name = f"loggen-{service}"
+            process_id = self._randint(1000, 9999)
+            
+            # Generate structured data
+            structured_data = self._generate_structured_data(service, level)
+            
+            # Generate message
+            message = self._get_realistic_message(service, level)
+            
+            # Get syslog priority and facility
+            priority = self._get_syslog_priority(level)
+            facility = self._get_syslog_facility(service)
+            
+            # Custom syslog format: RFC 5424 with custom structured data
+            # Format: <PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG
+            log_line = f'<{facility}{priority}>1 {timestamp} {hostname} {app_name} {process_id} - {structured_data} {message}'
+            
+            self._write_log(log_line)
+            
+            if i % 1000 == 0:
+                self.logger.info(f"[+] Syslog: {i}/{self.lines}")
+        
+        self.logger.info(f"[OK] Syslog: complete ({self.lines})")
+
+
 # Registry of all available log generators
 LOG_GENERATORS = {
     "apache": ApacheLogGenerator,
@@ -669,4 +749,5 @@ LOG_GENERATORS = {
     "tomcat": TomcatLogGenerator,
     "mysql": MysqlLogGenerator,
     "redis": RedisLogGenerator,
+    "syslog": SyslogLogGenerator,
 }

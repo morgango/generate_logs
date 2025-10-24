@@ -207,7 +207,7 @@ def main():
                        default=env_config.get('output'),
                        help="Output file path (default: auto-detect)")
     parser.add_argument("--format", "-f", choices=[
-        "apache", "json", "csv", "pipe", "kv", "hadoop", "logstash", "nginx", "tomcat", "mysql", "redis", "all"
+        "apache", "json", "csv", "pipe", "kv", "hadoop", "logstash", "nginx", "tomcat", "mysql", "redis", "syslog", "all"
     ], default=env_config.get('format', 'all'), 
                        help="Log format to generate (default: all)")
     parser.add_argument("--duration", "-d", type=int, 
