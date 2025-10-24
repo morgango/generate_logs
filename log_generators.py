@@ -352,8 +352,8 @@ class ApacheLogGenerator(BaseLogGenerator):
             response_time = f"{self._randint(0, 9)}.{self._randint(0, 999)}"
             upstream = self._pick("checkout", "inventory", "payments", "search", "shipping")
             
-            # Updated to match the working pattern from ELASTICSEARCH_GROK_PATTERNS.md
-            log_line = f'fmt=apache {ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" {response_time} {upstream}'
+            # Apache access log format
+            log_line = f'{ip} - - [{timestamp}] "{method} {path} HTTP/1.1" {status_code} {bytes_sent} "-" "{user_agent}" {response_time} {upstream}'
             
             self._write_log(log_line)
             
@@ -378,7 +378,6 @@ class JsonLogGenerator(BaseLogGenerator):
             user = f"u{self._randint(1000, 9999)}"
             
             log_data = {
-                "fmt": "json",
                 "ts": timestamp,
                 "level": level,
                 "service": service,
@@ -412,7 +411,7 @@ class CsvLogGenerator(BaseLogGenerator):
             status_code = self._pick(200, 201, 202, 204, 400, 401, 403, 404, 429, 500, 502)
             
             message = self._get_realistic_message(service, level)
-            log_line = f"fmt=csv {timestamp},{level},{service},{user},{latency},{status_code},{message}"
+            log_line = f"{timestamp},{level},{service},{user},{latency},{status_code},{message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -438,7 +437,7 @@ class PipeLogGenerator(BaseLogGenerator):
             country = self._pick("US", "CA", "GB", "DE", "FR", "IN", "BR", "AU", "JP", "SE", "NL")
             session = self._randb64(12)
             
-            log_line = f"fmt=pipe {timestamp}|{level}|{service}|txn={transaction}|amount={amount}|country={country}|session={session}"
+            log_line = f"{timestamp}|{level}|{service}|txn={transaction}|amount={amount}|country={country}|session={session}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -462,7 +461,7 @@ class KvLogGenerator(BaseLogGenerator):
             duration = self._randint(100, 5000)
             
             message = self._get_realistic_message(service, level)
-            log_line = f'fmt=kv ts={timestamp} level={level} service={service} req={request_id} duration_ms={duration} msg={message}'
+            log_line = f'ts={timestamp} level={level} service={service} req={request_id} duration_ms={duration} msg={message}'
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -490,7 +489,7 @@ class HadoopLogGenerator(BaseLogGenerator):
             duration = self._randint(1000, 30000)
             
             message = self._get_realistic_message("inventory", level)  # Use inventory service for Hadoop-style logs
-            log_line = f"fmt=hadoop {timestamp} {level} {component} {hostname} {job_id} {task_id} memory={memory_mb} cpu={cpu_percent} duration={duration} {message}"
+            log_line = f"{timestamp} {level} {component} {hostname} {job_id} {task_id} memory={memory_mb} cpu={cpu_percent} duration={duration} {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -521,7 +520,7 @@ class LogstashLogGenerator(BaseLogGenerator):
             message = self._get_realistic_message(service, level)
             
             # Logstash format: structured with clear field separators
-            log_line = f"fmt=logstash @timestamp={timestamp}; level={level}; service={service}; request_id={request_id}; session_id={session_id}; user_id={user_id}; duration_ms={duration}; status_code={status_code}; ip={ip_address}; user_agent={user_agent}; message={message}"
+            log_line = f"@timestamp={timestamp}; level={level}; service={service}; request_id={request_id}; session_id={session_id}; user_id={user_id}; duration_ms={duration}; status_code={status_code}; ip={ip_address}; user_agent={user_agent}; message={message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -562,7 +561,7 @@ class NginxLogGenerator(BaseLogGenerator):
             response_time = self._rand_rt()
             upstream = self._pick("checkout", "inventory", "payments", "search", "shipping")
             
-            log_line = f'fmt=nginx {ip} - - [{timestamp}] "{method} {path} {protocol}" {status_code} {bytes_sent} "{referer}" "{user_agent}" rt={response_time} upstream={upstream}'
+            log_line = f'{ip} - - [{timestamp}] "{method} {path} {protocol}" {status_code} {bytes_sent} "{referer}" "{user_agent}" rt={response_time} upstream={upstream}'
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -587,7 +586,7 @@ class TomcatLogGenerator(BaseLogGenerator):
             message = self._get_realistic_message("checkout", level)
             
             # Tomcat format: timestamp level component thread message
-            log_line = f"fmt=tomcat {timestamp} {level} {component} {thread} {message}"
+            log_line = f"{timestamp} {level} {component} {thread} {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -624,7 +623,7 @@ class MysqlLogGenerator(BaseLogGenerator):
             
             query = self._pick(*queries)
             
-            log_line = f"fmt=mysql {timestamp} {user}[{user}] @ {host} [{timestamp}] {query_time} {lock_time} {rows_sent} {rows_examined} {database} {query}"
+            log_line = f"{timestamp} {user}[{user}] @ {host} [{timestamp}] {query_time} {lock_time} {rows_sent} {rows_examined} {database} {query}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
@@ -648,7 +647,7 @@ class RedisLogGenerator(BaseLogGenerator):
             message = self._get_realistic_message("inventory", level)
             
             # Redis format: timestamp level pid role message
-            log_line = f"fmt=redis {timestamp} {level} {pid}:C {role} {message}"
+            log_line = f"{timestamp} {level} {pid}:C {role} {message}"
             self._write_log(log_line)
             
             if i % 1000 == 0:
