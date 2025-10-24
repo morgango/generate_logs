@@ -197,7 +197,7 @@ fmt=%{WORD:custom.type} %{TIMESTAMP_ISO8601:custom.timestamp} %{WORD:log.level} 
 
 ### 11. Syslog Format (RFC 5424)
 ```
-<%{NUMBER:syslog.priority:int}>%{NUMBER:syslog.version:int} %{TIMESTAMP_ISO8601:custom.timestamp} %{IPORHOST:host.name} %{NOTSPACE:process.name} %{NUMBER:process.pid:int} - \[%{NOTSPACE:syslog.structured_data_id}@%{NUMBER:syslog.enterprise_id:int} service="%{DATA:service.name}" request_id="%{DATA:http.request.id}" session_id="%{DATA:session.id}" user_id="%{DATA:user.id}" duration_ms="%{NUMBER:event.duration_ms:int}" status_code="%{NUMBER:http.response.status_code:int}" client_ip="%{IP:client.ip}"\] %{GREEDYDATA:custom.message}
+SYSLOG_RFC5424 <%{NUMBER:syslog.priority:int}>%{NUMBER:syslog.version:int} %{TIMESTAMP_ISO8601:custom.timestamp} %{IPORHOST:host.name} %{NOTSPACE:process.name} %{NUMBER:process.pid:int} - \[%{NOTSPACE:syslog.structured_data_id}@%{NUMBER:syslog.enterprise_id:int} service="%{DATA:service.name}" request_id="%{DATA:http.request.id}" session_id="%{DATA:session.id}" user_id="%{DATA:user.id}" duration_ms="%{NUMBER:event.duration_ms:int}" status_code="%{NUMBER:http.response.status_code:int}" client_ip="%{IP:client.ip}"\] %{GREEDYDATA:custom.message}
 ```
 
 **Direct ECS Field Extraction:**
@@ -220,7 +220,7 @@ fmt=%{WORD:custom.type} %{TIMESTAMP_ISO8601:custom.timestamp} %{WORD:log.level} 
 
 **Example Syslog Message:**
 ```
-<166>1 2023-12-25T10:30:45.123Z app-3.cluster.local loggen-checkout 12345 - [app@12345 service="checkout" request_id="req-a1b2c3d4" session_id="sess-e5f6g7h8i9j0" user_id="user-1234" duration_ms="250" status_code="200" client_ip="10.1.2.3"] User initiated checkout process
+SYSLOG_RFC5424 <166>1 2023-12-25T10:30:45.123Z app-3.cluster.local loggen-checkout 12345 - [app@12345 service="checkout" request_id="req-a1b2c3d4" session_id="sess-e5f6g7h8i9j0" user_id="user-1234" duration_ms="250" status_code="200" client_ip="10.1.2.3"] User initiated checkout process
 ```
 
 ## Usage Notes

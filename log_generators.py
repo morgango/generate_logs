@@ -660,6 +660,13 @@ class RedisLogGenerator(BaseLogGenerator):
 class SyslogLogGenerator(BaseLogGenerator):
     """Generates custom syslog-formatted logs with structured data"""
     
+    def __init__(self, lines: int, output_file: str, lock: threading.Lock, logger: logging.Logger, 
+                 syslog_file: str = None):
+        super().__init__(lines, output_file, lock, logger)
+        # Only create separate syslog file if explicitly requested
+        self.syslog_file = syslog_file
+        self.write_to_separate_file = syslog_file is not None
+    
     def _get_syslog_priority(self, level: str) -> str:
         """Map log levels to syslog priority codes"""
         priority_map = {
@@ -697,11 +704,17 @@ class SyslogLogGenerator(BaseLogGenerator):
         duration = self._randint(10, 5000)
         status_code = self._pick(200, 201, 204, 400, 401, 403, 404, 429, 500, 502, 503)
         ip_address = f"10.{self._randint(0, 255)}.{self._randint(0, 255)}.{self._randint(1, 254)}"
-        
         # RFC 5424 structured data format
         structured_data = f'[app@12345 service="{service}" request_id="{request_id}" session_id="{session_id}" user_id="{user_id}" duration_ms="{duration}" status_code="{status_code}" client_ip="{ip_address}"]'
         
         return structured_data
+    
+    def _write_syslog_file(self, line: str):
+        """Write to separate syslog file if specified"""
+        if self.write_to_separate_file and self.syslog_file:
+            with self.lock:
+                with open(self.syslog_file, 'a') as f:
+                    f.write(line + '\n')
     
     def generate(self) -> None:
         """Generate custom syslog-formatted logs"""
@@ -727,9 +740,14 @@ class SyslogLogGenerator(BaseLogGenerator):
             
             # Custom syslog format: RFC 5424 with custom structured data
             # Format: <PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG
-            log_line = f'<{facility}{priority}>1 {timestamp} {hostname} {app_name} {process_id} - {structured_data} {message}'
+            # Add syslog identifier for easy filtering
+            log_line = f'SYSLOG_RFC5424 <{facility}{priority}>1 {timestamp} {hostname} {app_name} {process_id} - {structured_data} {message}'
             
+            # Write to main file (always)
             self._write_log(log_line)
+            
+            # Write to separate syslog file (only if specified)
+            self._write_syslog_file(log_line)
             
             if i % 1000 == 0:
                 self.logger.info(f"[+] Syslog: {i}/{self.lines}")
