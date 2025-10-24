@@ -164,6 +164,51 @@ def run_single_format(format_name: str, output_file: str, lines_per_format: int,
     format_generator.generate()
 
 
+def run_single_format_with_duration(format_name: str, duration_seconds: int, output_file: str, lines_per_format: int, pause_seconds: float, logger: logging.Logger) -> None:
+    """Run a single log format generator for a specified duration"""
+    if format_name not in LOG_GENERATORS:
+        logger.error(f"Unknown format: {format_name}")
+        return
+    
+    start_time = time.time()
+    end_time = start_time + duration_seconds
+    
+    # Generate format-specific file path
+    base_dir = os.path.dirname(output_file)
+    base_name = os.path.basename(output_file).replace('.log', '')
+    format_file = os.path.join(base_dir, f"{base_name}_{format_name}.log")
+    
+    logger.info(f"[*] Starting time-based execution for {duration_seconds} seconds")
+    logger.info(f"[*] Will run until: {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"[*] Single format: {format_name.upper()}")
+    logger.info(f"[*] Writing to: {format_file}")
+    
+    iteration = 1
+    
+    while time.time() < end_time:
+        remaining_time = end_time - time.time()
+        logger.info(f"[*] Starting iteration {iteration} (remaining: {remaining_time:.1f}s)")
+        
+        # Run the single format generation
+        run_single_format(format_name, output_file, lines_per_format, logger)
+        
+        # Check if we still have time left
+        if time.time() < end_time:
+            logger.info(f"[*] Iteration {iteration} completed, restarting for remaining time...")
+            iteration += 1
+            
+            # Add pause between iterations if specified
+            if pause_seconds > 0:
+                logger.info(f"[*] Pausing for {pause_seconds:.1f} seconds...")
+                time.sleep(pause_seconds)
+        else:
+            logger.info(f"[*] Time limit reached after {iteration} iteration(s)")
+            break
+    
+    total_runtime = time.time() - start_time
+    logger.info(f"[OK] Time-based execution completed. Total runtime: {total_runtime:.1f}s, Iterations: {iteration}")
+
+
 def run_with_duration(duration_seconds: int, output_file: str, lines_per_format: int, pause_seconds: float, logger: logging.Logger) -> None:
     """Run log generation for a specified duration, restarting if it finishes early"""
     start_time = time.time()
@@ -245,9 +290,10 @@ def main():
     
     # If duration is specified, use time-based execution
     if args.duration:
-        if args.format != "all":
-            logger.warning("[!] Duration mode only supports 'all' format. Using all formats.")
-        run_with_duration(args.duration, output_file, args.lines, args.pause, logger)
+        if args.format == "all":
+            run_with_duration(args.duration, output_file, args.lines, args.pause, logger)
+        else:
+            run_single_format_with_duration(args.format, args.duration, output_file, args.lines, args.pause, logger)
     else:
         # Original execution logic
         if args.format == "all":
