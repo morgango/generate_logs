@@ -1,10 +1,10 @@
 # Synthetic Log Generator
 
-A Python application that generates synthetic log data in 6 distinct formats for testing and development purposes.
+A Python application that generates synthetic log data in multiple formats for testing and development purposes.
 
 ## Features
 
-- **6 Log Formats**: Apache, JSON, CSV, Pipe-delimited, Key-Value, and Hadoop
+- **12 Log Formats**: Apache, CSV, NVIDIA nvidia-smi, Pipe-delimited, Key-Value, Hadoop, Logstash, NGINX, Tomcat, MySQL, Redis, Syslog
 - **Concurrent Generation**: All formats generated simultaneously for efficiency
 - **Time-Based Execution**: Run for specified duration with automatic restart
 - **Environment Configuration**: Load settings from `.env` file
@@ -35,18 +35,24 @@ python3 generate_logs.py --output /path/to/output.log
 
 - `--lines, -l`: Maximum number of lines to generate per format (default: 5000, generates 1 to this number randomly)
 - `--output, -o`: Output file path (default: auto-detect)
-- `--format, -f`: Log format to generate (apache, json, csv, pipe, kv, hadoop, all)
+- `--format, -f`: Log format to generate (apache, csv, nvidia, pipe, kv, hadoop, logstash, nginx, tomcat, mysql, redis, syslog, all)
 - `--duration, -d`: Run for specified duration in seconds (restarts if finishes early)
 - `--pause, -p`: Pause duration in seconds between iterations (default: 0.0)
 
 ### Available Formats
 
 1. **Apache Logs**: Standard Apache access log format with IP, timestamp, method, path, status codes, etc.
-2. **JSON Logs**: Structured JSON format with timestamp, level, service, user, duration
-3. **CSV Logs**: Comma-separated values with timestamp, level, service, user, latency, status
+2. **CSV Logs**: Comma-separated values with timestamp, level, service, user, latency, status
+3. **NVIDIA nvidia-smi Logs**: CSV output with common GPU telemetry fields
 4. **Pipe Logs**: Pipe-delimited format with transaction data, amounts, countries, sessions
 5. **KV Logs**: Key-value format with timestamp, level, service, request ID, duration
 6. **Hadoop Logs**: Hadoop-style logs with job/task IDs, memory usage, CPU metrics
+7. **Logstash Logs**: Structured logs with key/value pairs
+8. **NGINX Logs**: Standard NGINX access log format
+9. **Tomcat Logs**: Apache Tomcat log format with component and thread info
+10. **MySQL Logs**: Slow query style entries with query metrics
+11. **Redis Logs**: Redis server-style log lines
+12. **Syslog Logs**: RFC 5424 style logs with structured data
 
 ## Output
 
@@ -62,8 +68,8 @@ The application will:
 # Generate up to 1000 lines of each format (random amount per format)
 python3 generate_logs.py --lines 1000
 
-# Generate only JSON logs
-python3 generate_logs.py --format json --lines 5000
+# Generate only NVIDIA nvidia-smi logs
+python3 generate_logs.py --format nvidia --lines 5000
 
 # Generate to specific file
 python3 generate_logs.py --output /tmp/test_logs.log --lines 2000

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Synthetic Log Generator
-Generates distinct types of synthetic log data in 10 different formats:
+Generates distinct types of synthetic log data in 12 different formats:
 1. Apache HTTP access logs
 2. JSON formatted log data  
 3. CSV formatted log data
@@ -13,6 +13,7 @@ Generates distinct types of synthetic log data in 10 different formats:
 9. Apache Tomcat logs
 10. MySQL slow query logs
 11. Redis logs
+12. NVIDIA nvidia-smi CSV logs
 """
 
 import json
@@ -271,8 +272,8 @@ def main():
                        default=env_config.get('output'),
                        help="Output file path (default: auto-detect)")
     parser.add_argument("--format", "-f", choices=[
-        "apache", "csv", "pipe", "kv", "hadoop", "logstash", "nginx", "tomcat", "mysql", "redis", "syslog", "all"
-    ], default=env_config.get('format', 'all'), 
+        "apache", "csv", "nvidia", "pipe", "kv", "hadoop", "logstash", "nginx", "tomcat", "mysql", "redis", "syslog", "all"
+    ], default=env_config.get('format', 'all'),
                        help="Log format to generate (default: all)")
     parser.add_argument("--duration", "-d", type=int, 
                        default=int(env_config.get('duration')) if env_config.get('duration') else None,

@@ -420,6 +420,88 @@ class CsvLogGenerator(BaseLogGenerator):
         self.logger.info(f"[OK] CSV: complete ({self.lines})")
 
 
+class NvidiaSmiLogGenerator(BaseLogGenerator):
+    """Generates NVIDIA nvidia-smi style CSV logs"""
+
+    CSV_FIELDS = [
+        "timestamp",
+        "index",
+        "name",
+        "temperature.gpu",
+        "utilization.gpu",
+        "utilization.memory",
+        "memory.total",
+        "memory.used",
+        "power.draw",
+        "power.limit",
+        "fan.speed",
+    ]
+
+    GPU_PROFILES = [
+        ("NVIDIA RTX 4090", 450, 24576),
+        ("NVIDIA A100-SXM4-40GB", 400, 40960),
+        ("NVIDIA A10", 150, 24576),
+    ]
+
+    def _get_gpu_profile(self, gpu_id: int):
+        return self.GPU_PROFILES[gpu_id % len(self.GPU_PROFILES)]
+
+    def _get_nvidia_timestamp(self) -> str:
+        return datetime.now().isoformat()
+
+    def generate(self) -> None:
+        """Generate NVIDIA nvidia-smi CSV logs"""
+        self.logger.info(f"[*] NVIDIA: starting ({self.lines} lines)")
+
+        if self.lines <= 0:
+            self.logger.info("[OK] NVIDIA: complete (0)")
+            return
+
+        # nvidia-smi CSV output includes a header by default
+        header = ", ".join(self.CSV_FIELDS)
+        self._write_log(header)
+
+        lines_to_generate = max(0, self.lines - 1)
+        for i in range(1, lines_to_generate + 1):
+            gpu_id = (i - 1) % len(self.GPU_PROFILES)
+            name, power_limit, memory_total = self._get_gpu_profile(gpu_id)
+
+            utilization_gpu = self._randint(0, 100)
+            utilization_memory = min(100, max(0, utilization_gpu + self._randint(-15, 15)))
+
+            base_power = 30.0
+            dynamic_power = (power_limit - base_power) * (utilization_gpu / 100.0)
+            power_draw = max(0.0, min(power_limit, dynamic_power + base_power + random.uniform(-5, 5)))
+
+            temperature_gpu = 30.0 + (utilization_gpu * 0.6) + random.uniform(-2, 4)
+            temperature_gpu = max(25.0, min(95.0, temperature_gpu))
+
+            memory_used = int(memory_total * (utilization_gpu / 110.0) + self._randint(0, 256))
+            memory_used = max(0, min(memory_total, memory_used))
+
+            fan_speed = min(100, max(20, utilization_gpu + self._randint(-10, 10)))
+
+            log_line = (
+                f"{self._get_nvidia_timestamp()}, "
+                f"{gpu_id}, "
+                f"{name}, "
+                f"{temperature_gpu:.1f}, "
+                f"{utilization_gpu}, "
+                f"{utilization_memory}, "
+                f"{memory_total}, "
+                f"{memory_used}, "
+                f"{power_draw:.1f}, "
+                f"{power_limit}, "
+                f"{fan_speed}"
+            )
+            self._write_log(log_line)
+
+            if i % 1000 == 0:
+                self.logger.info(f"[+] NVIDIA: {i}/{lines_to_generate}")
+
+        self.logger.info(f"[OK] NVIDIA: complete ({self.lines})")
+
+
 class PipeLogGenerator(BaseLogGenerator):
     """Generates pipe-delimited logs"""
     
@@ -758,6 +840,7 @@ class SyslogLogGenerator(BaseLogGenerator):
 LOG_GENERATORS = {
     "apache": ApacheLogGenerator,
     "csv": CsvLogGenerator,
+    "nvidia": NvidiaSmiLogGenerator,
     "pipe": PipeLogGenerator,
     "kv": KvLogGenerator,
     "hadoop": HadoopLogGenerator,
