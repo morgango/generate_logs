@@ -1,0 +1,138 @@
+{
+  "events": [
+    {
+      "id": "cross_format_attack_001",
+      "name": "Cross-Format Attack Pattern",
+      "description": "Same IP generates errors in both Apache and NGINX within 5-minute window",
+      "type": "cross_format_attack",
+      "start_time": "+2m",
+      "duration_seconds": 300,
+      "ip": "192.168.1.100",
+      "affected_formats": ["apache", "nginx"],
+      "error_rate": 0.7,
+      "error_codes": [403, 404, 500],
+      "apache": {
+        "total_logs": 50,
+        "error_rate": 0.7,
+        "error_codes": [403, 404, 500],
+        "paths": ["/admin", "/api/users", "/login", "/wp-admin"]
+      },
+      "nginx": {
+        "total_logs": 40,
+        "error_rate": 0.7,
+        "error_codes": [403, 404, 500],
+        "paths": ["/api/v1/users", "/admin", "/login"]
+      }
+    },
+    {
+      "id": "error_burst_001",
+      "name": "Error Burst Pattern",
+      "description": "Sudden spike in 5xx errors from specific IP",
+      "type": "error_burst",
+      "start_time": "+10m",
+      "duration_seconds": 30,
+      "ip": "10.0.0.50",
+      "affected_formats": ["apache"],
+      "error_rate": 0.9,
+      "error_codes": [500, 502, 503],
+      "apache": {
+        "total_logs": 50,
+        "error_rate": 0.9,
+        "error_codes": [500, 502, 503]
+      }
+    },
+    {
+      "id": "scanning_pattern_001",
+      "name": "Path Scanning Pattern",
+      "description": "IP tries many different paths, generating 404s",
+      "type": "scanning_pattern",
+      "start_time": "+15m",
+      "duration_seconds": 120,
+      "ip": "198.51.100.25",
+      "affected_formats": ["apache", "nginx"],
+      "error_rate": 0.8,
+      "error_codes": [404],
+      "apache": {
+        "total_logs": 30,
+        "error_rate": 0.8,
+        "error_codes": [404],
+        "paths": [
+          "/admin",
+          "/wp-admin",
+          "/phpmyadmin",
+          "/.env",
+          "/api/users",
+          "/api/admin",
+          "/config",
+          "/backup",
+          "/.git",
+          "/.svn"
+        ]
+      },
+      "nginx": {
+        "total_logs": 25,
+        "error_rate": 0.8,
+        "error_codes": [404],
+        "paths": [
+          "/admin",
+          "/wp-admin",
+          "/.env",
+          "/api/v1/admin",
+          "/config"
+        ]
+      }
+    },
+    {
+      "id": "brute_force_001",
+      "name": "Brute Force Attack",
+      "description": "Repeated login attempts with 401/403 errors",
+      "type": "brute_force",
+      "start_time": "+20m",
+      "duration_seconds": 180,
+      "ip": "203.0.113.10",
+      "affected_formats": ["apache", "nginx"],
+      "error_rate": 0.95,
+      "error_codes": [401, 403],
+      "apache": {
+        "total_logs": 20,
+        "error_rate": 0.95,
+        "error_codes": [401, 403],
+        "paths": ["/login"],
+        "methods": ["POST"]
+      },
+      "nginx": {
+        "total_logs": 18,
+        "error_rate": 0.95,
+        "error_codes": [401, 403],
+        "paths": ["/api/v1/auth/login"],
+        "methods": ["POST"]
+      }
+    },
+    {
+      "id": "service_degradation_001",
+      "name": "Service Degradation Pattern",
+      "description": "Gradual increase in 5xx errors, then recovery",
+      "type": "service_degradation",
+      "start_time": "+25m",
+      "duration_seconds": 600,
+      "ip": "10.0.0.1",
+      "affected_formats": ["apache", "nginx"],
+      "error_rate": 0.3,
+      "error_codes": [500, 502, 503],
+      "apache": {
+        "total_logs": 100,
+        "error_rate": 0.3,
+        "error_codes": [500, 502, 503],
+        "degradation_curve": "gradual_increase_then_recovery"
+      },
+      "nginx": {
+        "total_logs": 80,
+        "error_rate": 0.3,
+        "error_codes": [500, 502, 503],
+        "degradation_curve": "gradual_increase_then_recovery"
+      }
+    }
+  ]
+}
+
+
