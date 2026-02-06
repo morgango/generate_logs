@@ -221,6 +221,107 @@ class EventAwareNginxGenerator:
         return log_line
 
 
+@dataclass
+class NvidiaGpuMetrics:
+    """Structured NVIDIA GPU metrics payload"""
+    timestamp: str
+    index: int
+    name: str
+    temperature_gpu: float
+    utilization_gpu: int
+    utilization_memory: int
+    memory_total: int
+    memory_used: int
+    power_draw: float
+    power_limit: float
+    fan_speed: int
+
+
+class NvidiaGpuMetricsGenerator:
+    """Generate sample NVIDIA GPU metrics as nvidia-smi CSV log lines"""
+
+    # Mirrors a common nvidia-smi query order
+    CSV_FIELDS = [
+        "timestamp",
+        "index",
+        "name",
+        "temperature.gpu",
+        "utilization.gpu",
+        "utilization.memory",
+        "memory.total",
+        "memory.used",
+        "power.draw",
+        "power.limit",
+        "fan.speed",
+    ]
+
+    def __init__(
+        self,
+        gpu_names: Optional[List[str]] = None,
+        power_limits_watts: Optional[List[int]] = None,
+        memory_totals_mb: Optional[List[int]] = None,
+    ):
+        self.gpu_names = gpu_names or ["NVIDIA RTX 4090"]
+        self.power_limits_watts = power_limits_watts or [450]
+        self.memory_totals_mb = memory_totals_mb or [24576]
+
+    def generate_metrics(self, current_time: datetime, gpu_id: int = 0) -> NvidiaGpuMetrics:
+        """Generate a metrics object for a single GPU"""
+        name = self.gpu_names[gpu_id % len(self.gpu_names)]
+        power_limit = self.power_limits_watts[gpu_id % len(self.power_limits_watts)]
+        memory_total = self.memory_totals_mb[gpu_id % len(self.memory_totals_mb)]
+
+        utilization = random.randint(0, 100)
+        utilization_memory = int(min(100, max(0, utilization + random.randint(-15, 15))))
+
+        base_power = 30.0  # idle baseline
+        dynamic_power = (power_limit - base_power) * (utilization / 100.0)
+        power_watts = max(0.0, min(power_limit, dynamic_power + base_power + random.uniform(-5, 5)))
+
+        temperature_c = 30.0 + (utilization * 0.6) + random.uniform(-2, 4)
+        temperature_c = max(25.0, min(95.0, temperature_c))
+
+        memory_used = int(memory_total * (utilization / 110.0) + random.randint(0, 256))
+        memory_used = max(0, min(memory_total, memory_used))
+
+        fan_speed = int(min(100, max(20, utilization + random.randint(-10, 10))))
+
+        return NvidiaGpuMetrics(
+            timestamp=current_time.isoformat(),
+            index=gpu_id,
+            name=name,
+            temperature_gpu=round(temperature_c, 1),
+            utilization_gpu=utilization,
+            utilization_memory=utilization_memory,
+            memory_total=memory_total,
+            memory_used=memory_used,
+            power_draw=round(power_watts, 1),
+            power_limit=float(power_limit),
+            fan_speed=fan_speed,
+        )
+
+    def generate_csv_header(self) -> str:
+        """Return the nvidia-smi --query-gpu header line"""
+        return ", ".join(self.CSV_FIELDS)
+
+    def generate_log_line(self, current_time: datetime, gpu_id: int = 0) -> str:
+        """Generate a CSV log line similar to nvidia-smi --query-gpu"""
+        metrics = self.generate_metrics(current_time, gpu_id)
+        return (
+            f"{metrics.timestamp}, "
+            f"{metrics.index}, "
+            f"{metrics.name}, "
+            f"{metrics.temperature_gpu}, "
+            f"{metrics.utilization_gpu}, "
+            f"{metrics.utilization_memory}, "
+            f"{metrics.memory_total}, "
+            f"{metrics.memory_used}, "
+            f"{metrics.power_draw}, "
+            f"{metrics.power_limit}, "
+            f"{metrics.fan_speed}"
+        )
+
+
 def load_event_config(config_file: str) -> List[EventConfig]:
     """Load event configuration from JSON file"""
     with open(config_file, 'r') as f:
@@ -344,6 +445,19 @@ def example_usage():
         print(f"  {log_line[:100]}...")
         current_time += timedelta(seconds=1)
     
+    print("\nSample NVIDIA GPU metrics logs (nvidia-smi CSV):")
+    gpu_gen = NvidiaGpuMetricsGenerator(
+        gpu_names=["NVIDIA RTX 4090", "NVIDIA A100"],
+        power_limits_watts=[450, 400],
+        memory_totals_mb=[24576, 40960],
+    )
+    print(f"  {gpu_gen.generate_csv_header()}")
+    current_time = start_time
+    for i in range(5):
+        log_line = gpu_gen.generate_log_line(current_time, gpu_id=i % 2)
+        print(f"  {log_line}")
+        current_time += timedelta(seconds=1)
+
     print("\n" + "=" * 50)
     print("Event state:")
     for event_id, state in coordinator.event_state.items():
